@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/astmirzhan/blockchain_final#readme",
   "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0",
     "adm-zip": "^0.4.16",
     "ansi-colors": "^4.1.3",
     "ansi-regex": "^5.0.1",
