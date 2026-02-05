@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./Campaign.sol";
+import "./Capmaign.sol";
 
 interface IONTAccessControl {
     function grantRole(bytes32 role, address account) external;
