@@ -15,12 +15,12 @@ export default function CreateCampaignForm({ signer, onCampaignCreated }) {
         e.preventDefault();
 
         if (!signer) {
-            setError('Сначала подключите кошелёк!');
+            setError('Connect wallet first!');
             return;
         }
 
         if (!title || !goalEth || !durationDays) {
-            setError('Заполните все поля!');
+            setError('Fill in all fields!');
             return;
         }
 
@@ -40,25 +40,29 @@ export default function CreateCampaignForm({ signer, onCampaignCreated }) {
                 durationSeconds
             );
 
-            setSuccess('Транзакция отправлена, ожидаем подтверждения...');
+            setSuccess('Transaction sent, waiting for confirmation...');
 
             const receipt = await tx.wait();
 
-            // Find the CampaignCreated event
-            const event = receipt.logs.find(log => {
+            let campaignAddress = null;
+
+            for (const log of receipt.logs) {
                 try {
                     const parsed = factory.interface.parseLog(log);
-                    return parsed?.name === 'CampaignCreated';
+                    if (parsed && parsed.name === 'CampaignCreated') {
+                        campaignAddress = parsed.args[1] || parsed.args.campaignAddress;
+                        break;
+                    }
                 } catch {
-                    return false;
+                    continue;
                 }
-            });
+            }
 
-            if (event) {
-                const parsed = factory.interface.parseLog(event);
-                setSuccess(`✅ Кампания создана! Адрес: ${parsed.args.campaignAddress}`);
+            if (campaignAddress) {
+                const shortAddr = `${campaignAddress.slice(0, 8)}...${campaignAddress.slice(-6)}`;
+                setSuccess(`✅ Campaign created! Address: ${shortAddr}`);
             } else {
-                setSuccess('✅ Кампания успешно создана!');
+                setSuccess('✅ Campaign created successfully!');
             }
 
             // Clear form
@@ -72,7 +76,7 @@ export default function CreateCampaignForm({ signer, onCampaignCreated }) {
         } catch (err) {
             console.error('Create campaign error:', err);
             const reason = extractErrorReason(err);
-            setError(`Ошибка: ${reason}`);
+            setError(`Error: ${reason}`);
         } finally {
             setLoading(false);
         }
@@ -88,35 +92,35 @@ export default function CreateCampaignForm({ signer, onCampaignCreated }) {
             if (match) return match[1];
             return err.message.slice(0, 100);
         }
-        return 'Неизвестная ошибка';
+        return 'Unknown error';
     };
 
     // Helper to display duration nicely
     const formatDurationHint = (days) => {
         if (!days || days <= 0) return '';
         const d = parseInt(days);
-        if (d < 30) return `${d} дн.`;
+        if (d < 30) return `${d} days`;
         if (d < 365) {
             const months = Math.floor(d / 30);
             const remainDays = d % 30;
-            return remainDays > 0 ? `≈ ${months} мес. ${remainDays} дн.` : `≈ ${months} мес.`;
+            return remainDays > 0 ? `≈ ${months} months ${remainDays} days` : `≈ ${months} months`;
         }
         const years = Math.floor(d / 365);
         const remainMonths = Math.floor((d % 365) / 30);
-        return remainMonths > 0 ? `≈ ${years} г. ${remainMonths} мес.` : `≈ ${years} г.`;
+        return remainMonths > 0 ? `≈ ${years} years ${remainMonths} months` : `≈ ${years} years`;
     };
 
     return (
         <div className="card">
-            <h3 className="card-title">📝 Создать кампанию</h3>
+            <h3 className="card-title">📝 Create Campaign</h3>
 
             <form onSubmit={handleSubmit}>
                 <div className="form-group">
-                    <label>Название кампании</label>
+                    <label>Campaign Title</label>
                     <input
                         type="text"
                         className="form-control"
-                        placeholder="Например: Новое такси для города"
+                        placeholder="e.g. New Electric Taxi Fleet"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         disabled={loading}
@@ -125,13 +129,13 @@ export default function CreateCampaignForm({ signer, onCampaignCreated }) {
 
                 <div className="form-row">
                     <div className="form-group">
-                        <label>Цель (ETH)</label>
+                        <label>Goal (ETH)</label>
                         <input
                             type="number"
                             className="form-control"
                             placeholder="1"
-                            min="1"
-                            step="1"
+                            min="0.1"
+                            step="0.1"
                             value={goalEth}
                             onChange={(e) => setGoalEth(e.target.value)}
                             disabled={loading}
@@ -139,40 +143,41 @@ export default function CreateCampaignForm({ signer, onCampaignCreated }) {
                     </div>
 
                     <div className="form-group">
-                        <label>Длительность (дни)</label>
+                        <label>Duration (days)</label>
                         <input
                             type="number"
                             className="form-control"
                             placeholder="30"
                             min="1"
+                            step="1"
                             value={durationDays}
                             onChange={(e) => setDurationDays(e.target.value)}
                             disabled={loading}
                         />
-                        {durationDays && (
-                            <span className="duration-hint">{formatDurationHint(durationDays)}</span>
-                        )}
+                        <small className="form-text text-muted">
+                            {formatDurationHint(durationDays)}
+                        </small>
                     </div>
                 </div>
 
                 <button
                     type="submit"
-                    className="btn btn-primary"
+                    className="btn btn-primary btn-block"
                     disabled={loading || !signer}
                 >
                     {loading ? (
                         <>
                             <span className="spinner"></span>
-                            Создание...
+                            Creating...
                         </>
                     ) : (
-                        '🚀 Создать кампанию'
+                        '🔥 Create Campaign'
                     )}
                 </button>
-            </form>
 
-            {error && <div className="message message-error">{error}</div>}
-            {success && <div className="message message-success">{success}</div>}
+                {error && <div className="message message-error">{error}</div>}
+                {success && <div className="message message-success">{success}</div>}
+            </form>
         </div>
     );
 }

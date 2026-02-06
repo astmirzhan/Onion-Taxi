@@ -16,7 +16,7 @@ export default function CampaignList({ provider, signer, selectedCampaign, onSel
 
     const loadCampaigns = async () => {
         if (!provider) {
-            setError('Сначала подключите кошелёк!');
+            setError('Please connect your wallet first!');
             return;
         }
 
@@ -29,11 +29,11 @@ export default function CampaignList({ provider, signer, selectedCampaign, onSel
             setCampaigns(campaignAddresses);
 
             if (campaignAddresses.length === 0) {
-                setError('Кампаний пока нет. Создайте первую!');
+                setError('No campaigns found. Create the first one!');
             }
         } catch (err) {
             console.error('Load campaigns error:', err);
-            setError('Ошибка загрузки кампаний: ' + err.message);
+            setError('Error loading campaigns: ' + err.message);
         } finally {
             setLoading(false);
         }
@@ -45,7 +45,7 @@ export default function CampaignList({ provider, signer, selectedCampaign, onSel
 
     return (
         <div className="card">
-            <h3 className="card-title">📋 Список кампаний</h3>
+            <h3 className="card-title">📋 Campaign List</h3>
 
             <button
                 className="btn btn-secondary"
@@ -56,10 +56,10 @@ export default function CampaignList({ provider, signer, selectedCampaign, onSel
                 {loading ? (
                     <>
                         <span className="spinner"></span>
-                        Загрузка...
+                        Loading...
                     </>
                 ) : (
-                    '🔄 Загрузить кампании'
+                    '🔄 Load Campaigns'
                 )}
             </button>
 
@@ -73,7 +73,7 @@ export default function CampaignList({ provider, signer, selectedCampaign, onSel
                             className={`campaign-item ${selectedCampaign === address ? 'selected' : ''}`}
                             onClick={() => onSelectCampaign(address)}
                         >
-                            <strong>Кампания #{index + 1}</strong>
+                            <strong>Campaign #{index + 1}</strong>
                             <div className="campaign-item-address">{truncateAddress(address)}</div>
                         </li>
                     ))}
@@ -82,7 +82,7 @@ export default function CampaignList({ provider, signer, selectedCampaign, onSel
 
             {campaigns.length === 0 && !loading && !error && (
                 <div className="empty-state">
-                    <p>Нажмите кнопку выше чтобы загрузить список кампаний</p>
+                    <p>Click the button above to load campaigns</p>
                 </div>
             )}
         </div>

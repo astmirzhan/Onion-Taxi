@@ -51,7 +51,7 @@ export default function WalletBar({ onConnect, account, setAccount, provider, se
 
     const connectWallet = async () => {
         if (!window.ethereum) {
-            setError('MetaMask не установлен! Пожалуйста, установите MetaMask.');
+            setError('MetaMask is not installed! Please install MetaMask.');
             return;
         }
 
@@ -81,9 +81,9 @@ export default function WalletBar({ onConnect, account, setAccount, provider, se
         } catch (err) {
             console.error('Connect wallet error:', err);
             if (err.code === 4001) {
-                setError('Подключение отклонено пользователем');
+                setError('Connection rejected by user');
             } else {
-                setError('Ошибка подключения: ' + err.message);
+                setError('Connection error: ' + err.message);
             }
         } finally {
             setConnecting(false);
@@ -126,7 +126,7 @@ export default function WalletBar({ onConnect, account, setAccount, provider, se
                             {connecting ? (
                                 <>
                                     <span className="spinner"></span>
-                                    Подключение...
+                                    Connecting...
                                 </>
                             ) : (
                                 '🦊 Connect MetaMask'
@@ -144,7 +144,7 @@ export default function WalletBar({ onConnect, account, setAccount, provider, se
                             setProvider(null);
                         }}
                     >
-                        Отключить
+                        Disconnect
                     </button>
                 )}
             </div>
@@ -153,7 +153,7 @@ export default function WalletBar({ onConnect, account, setAccount, provider, se
 
             {account && !isCorrectNetwork && (
                 <div className="network-warning">
-                    ⚠️ Неверная сеть! Пожалуйста, переключитесь на {NETWORK_NAME} (Chain ID: {EXPECTED_CHAIN_ID})
+                    ⚠️ Wrong Network! Please switch to {NETWORK_NAME} (Chain ID: {EXPECTED_CHAIN_ID})
                 </div>
             )}
         </div>

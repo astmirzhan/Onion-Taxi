@@ -12,6 +12,7 @@ interface IONTAccessControl {
 contract CampaignFactory {
     address public immutable ontToken;
     uint256 public immutable rate;
+    address public immutable feeRecipient; 
 
     address[] private campaigns;
 
@@ -25,7 +26,8 @@ contract CampaignFactory {
 
     constructor(address _ontToken, uint256 _rate) {
         ontToken = _ontToken;
-        rate = _rate;
+        rate = _rate; // 100,000 ONT per ETH
+        feeRecipient = msg.sender; // Deployer collects fees
     }
 
     /// @notice Anyone can create a campaign. Campaign gets MINTER_ROLE to mint ONT rewards.
@@ -44,7 +46,8 @@ contract CampaignFactory {
             goalWei,
             deadline,
             ontToken,
-            rate
+            rate,
+            feeRecipient
         );
 
         campaignAddress = address(campaign);

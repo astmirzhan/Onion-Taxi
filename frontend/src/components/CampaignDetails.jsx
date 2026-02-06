@@ -9,6 +9,7 @@ export default function CampaignDetails({ campaignAddress, provider, signer }) {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [donateAmount, setDonateAmount] = useState('');
+    const [userContribution, setUserContribution] = useState(0n);
 
     useEffect(() => {
         if (campaignAddress && provider) {
@@ -34,9 +35,15 @@ export default function CampaignDetails({ campaignAddress, provider, signer }) {
                 successful: data._successful,
                 contractBalance: data._contractBalance
             });
+
+            if (signer) {
+                const address = await signer.getAddress();
+                const contribution = await campaign.contributions(address);
+                setUserContribution(contribution);
+            }
         } catch (err) {
             console.error('Load summary error:', err);
-            setError('Ошибка загрузки: ' + err.message);
+            setError('Load error: ' + err.message);
         } finally {
             setLoading(false);
         }
@@ -49,12 +56,11 @@ export default function CampaignDetails({ campaignAddress, provider, signer }) {
         if (err.message) {
             const match = err.message.match(/reason="([^"]+)"/);
             if (match) return match[1];
-            // Check for custom errors
             const customMatch = err.message.match(/reverted with custom error '(\w+)\(\)'/);
             if (customMatch) return customMatch[1];
             return err.message.slice(0, 150);
         }
-        return 'Неизвестная ошибка';
+        return 'Unknown error';
     };
 
     const handleContribute = async () => {
@@ -67,36 +73,36 @@ export default function CampaignDetails({ campaignAddress, provider, signer }) {
         try {
             const campaign = new Contract(campaignAddress, CampaignABI.abi, signer);
             const tx = await campaign.contribute({ value: parseEther(donateAmount) });
-            setSuccess('Транзакция отправлена...');
+            setSuccess('Transaction sent...');
             await tx.wait();
-            setSuccess('✅ Вклад успешно сделан!');
+            setSuccess('✅ Contribution successful!');
             setDonateAmount('');
             loadSummary();
         } catch (err) {
             console.error('Contribute error:', err);
-            setError(`Ошибка: ${extractErrorReason(err)}`);
+            setError(`Error: ${extractErrorReason(err)}`);
         } finally {
             setActionLoading('');
         }
     };
 
-    const handleFinalize = async () => {
+    const handleCancel = async () => {
         if (!signer) return;
 
-        setActionLoading('finalize');
+        setActionLoading('cancel');
         setError('');
         setSuccess('');
 
         try {
             const campaign = new Contract(campaignAddress, CampaignABI.abi, signer);
-            const tx = await campaign.finalize();
-            setSuccess('Транзакция отправлена...');
+            const tx = await campaign.cancelContribution();
+            setSuccess('Transaction sent...');
             await tx.wait();
-            setSuccess('✅ Кампания финализирована!');
+            setSuccess('✅ Contribution cancelled, funds refunded!');
             loadSummary();
         } catch (err) {
-            console.error('Finalize error:', err);
-            setError(`Ошибка: ${extractErrorReason(err)}`);
+            console.error('Cancel error:', err);
+            setError(`Error: ${extractErrorReason(err)}`);
         } finally {
             setActionLoading('');
         }
@@ -112,13 +118,13 @@ export default function CampaignDetails({ campaignAddress, provider, signer }) {
         try {
             const campaign = new Contract(campaignAddress, CampaignABI.abi, signer);
             const tx = await campaign.refund();
-            setSuccess('Транзакция отправлена...');
+            setSuccess('Transaction sent...');
             await tx.wait();
-            setSuccess('✅ Возврат средств выполнен!');
+            setSuccess('✅ Refund successful!');
             loadSummary();
         } catch (err) {
             console.error('Refund error:', err);
-            setError(`Ошибка: ${extractErrorReason(err)}`);
+            setError(`Error: ${extractErrorReason(err)}`);
         } finally {
             setActionLoading('');
         }
@@ -134,13 +140,13 @@ export default function CampaignDetails({ campaignAddress, provider, signer }) {
         try {
             const campaign = new Contract(campaignAddress, CampaignABI.abi, signer);
             const tx = await campaign.withdrawCreator();
-            setSuccess('Транзакция отправлена...');
+            setSuccess('Transaction sent...');
             await tx.wait();
-            setSuccess('✅ Средства выведены!');
+            setSuccess('✅ Funds withdrawn!');
             loadSummary();
         } catch (err) {
             console.error('Withdraw error:', err);
-            setError(`Ошибка: ${extractErrorReason(err)}`);
+            setError(`Error: ${extractErrorReason(err)}`);
         } finally {
             setActionLoading('');
         }
@@ -148,7 +154,7 @@ export default function CampaignDetails({ campaignAddress, provider, signer }) {
 
     const formatDate = (timestamp) => {
         const date = new Date(Number(timestamp) * 1000);
-        return date.toLocaleString('ru-RU');
+        return date.toLocaleString('en-US');
     };
 
     const isDeadlinePassed = () => {
@@ -159,9 +165,9 @@ export default function CampaignDetails({ campaignAddress, provider, signer }) {
     if (!campaignAddress) {
         return (
             <div className="card">
-                <h3 className="card-title">📊 Детали кампании</h3>
+                <h3 className="card-title">📊 Campaign Details</h3>
                 <div className="empty-state">
-                    <p>Выберите кампанию из списка слева</p>
+                    <p>Select a campaign from the list</p>
                 </div>
             </div>
         );
@@ -170,10 +176,10 @@ export default function CampaignDetails({ campaignAddress, provider, signer }) {
     if (loading) {
         return (
             <div className="card">
-                <h3 className="card-title">📊 Детали кампании</h3>
+                <h3 className="card-title">📊 Campaign Details</h3>
                 <div className="loading">
                     <span className="spinner"></span>
-                    Загрузка...
+                    Loading...
                 </div>
             </div>
         );
@@ -181,7 +187,7 @@ export default function CampaignDetails({ campaignAddress, provider, signer }) {
 
     return (
         <div className="card">
-            <h3 className="card-title">📊 {summary?.title || 'Детали кампании'}</h3>
+            <h3 className="card-title">📊 {summary?.title || 'Campaign Details'}</h3>
 
             <div style={{ marginBottom: '12px', fontFamily: 'monospace', fontSize: '0.875rem', color: '#6B6B6B' }}>
                 📍 {campaignAddress}
@@ -191,29 +197,31 @@ export default function CampaignDetails({ campaignAddress, provider, signer }) {
                 <>
                     <div className="detail-grid">
                         <div className="detail-item">
-                            <div className="detail-label">Цель</div>
+                            <div className="detail-label">Goal</div>
                             <div className="detail-value">{formatEther(summary.goalWei)} ETH</div>
                         </div>
                         <div className="detail-item">
-                            <div className="detail-label">Собрано</div>
-                            <div className="detail-value">{formatEther(summary.totalRaised)} ETH</div>
+                            <div className="detail-label">Raised</div>
+                            <div className="detail-value" style={{ color: 'var(--success)' }}>
+                                {formatEther(summary.totalRaised)} ETH
+                            </div>
                         </div>
                         <div className="detail-item">
                             <div className="detail-label">Баланс контракта</div>
                             <div className="detail-value">{formatEther(summary.contractBalance)} ETH</div>
                         </div>
                         <div className="detail-item">
-                            <div className="detail-label">Дедлайн</div>
-                            <div className="detail-value" style={{ fontSize: '0.875rem' }}>
-                                {formatDate(summary.deadline)}
-                            </div>
+                            <div className="detail-label">Deadline</div>
+                            <div className="detail-value">{formatDate(summary.deadline)}</div>
                         </div>
                         <div className="detail-item">
-                            <div className="detail-label">Статус</div>
-                            <div className={`detail-value ${summary.finalized ? (summary.successful ? 'success' : 'error') : ''}`}>
-                                {summary.finalized
-                                    ? (summary.successful ? '✅ Успешно' : '❌ Не достигнуто')
-                                    : (isDeadlinePassed() ? '⏰ Ожидает финализации' : '🔄 Активна')}
+                            <div className="detail-label">Status</div>
+                            <div className="detail-value">
+                                {summary.finalized ? (
+                                    summary.successful ? <span style={{ color: 'var(--success)' }}>SUCCESS</span> : <span style={{ color: 'var(--error)' }}>FAILED</span>
+                                ) : (
+                                    isDeadlinePassed() ? <span style={{ color: 'var(--warning)' }}>ENDED</span> : <span style={{ color: 'var(--accent-cyan)' }}>ACTIVE</span>
+                                )}
                             </div>
                         </div>
                         <div className="detail-item">
@@ -224,79 +232,86 @@ export default function CampaignDetails({ campaignAddress, provider, signer }) {
                         </div>
                     </div>
 
-                    <div className="actions-grid">
-                        {/* Contribute */}
-                        <div className="action-card">
-                            <h4>💰 Внести вклад</h4>
-                            <div className="inline-form">
-                                <div className="form-group">
+                    <div className="progress-bar-container">
+                        <div
+                            className="progress-bar-fill"
+                            style={{
+                                width: `${Math.min((Number(summary.totalRaised) / Number(summary.goalWei)) * 100, 100)}%`
+                            }}
+                        ></div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="action-buttons">
+                        {!isDeadlinePassed() && !summary.finalized && (
+                            <div className="contribute-form">
+                                <div className="detail-label" style={{ marginBottom: '8px' }}>Make a Contribution</div>
+                                <div style={{ display: 'flex', gap: '8px' }}>
                                     <input
                                         type="number"
                                         className="form-control"
-                                        placeholder="ETH"
-                                        step="0.01"
-                                        min="0.001"
+                                        placeholder="0.1"
                                         value={donateAmount}
                                         onChange={(e) => setDonateAmount(e.target.value)}
-                                        disabled={actionLoading || summary.finalized}
+                                        disabled={actionLoading}
                                     />
+                                    <button
+                                        className="btn btn-primary"
+                                        onClick={handleContribute}
+                                        disabled={actionLoading || !donateAmount}
+                                    >
+                                        {actionLoading === 'contribute' ? <span className="spinner"></span> : 'CONTRIBUTE'}
+                                    </button>
                                 </div>
+
+                                {userContribution > 0n && (
+                                    <div style={{ marginTop: '12px' }}>
+                                        <div style={{ fontSize: '0.875rem', color: '#6B6B6B', marginBottom: '8px' }}>
+                                            You contributed {formatEther(userContribution)} ETH
+                                        </div>
+                                        <button
+                                            className="btn btn-secondary btn-small"
+                                            onClick={handleCancel}
+                                            disabled={actionLoading}
+                                            style={{ width: '100%', borderColor: 'var(--warning)', color: 'var(--warning)' }}
+                                        >
+                                            {actionLoading === 'cancel' ? <span className="spinner"></span> : 'CANCEL & REFUND'}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {isDeadlinePassed() && !summary.successful && (
+                            <div className="refund-section">
+                                <p style={{ color: 'var(--error)', marginBottom: '8px', fontSize: '0.875rem' }}>
+                                    Campaign failed. You can refund your contribution.
+                                </p>
                                 <button
-                                    className="btn btn-primary btn-small"
-                                    onClick={handleContribute}
-                                    disabled={actionLoading || !signer || !donateAmount || summary.finalized}
+                                    className="btn btn-danger"
+                                    onClick={handleRefund}
+                                    disabled={actionLoading}
                                 >
-                                    {actionLoading === 'contribute' ? <span className="spinner"></span> : 'Contribute'}
+                                    {actionLoading === 'refund' ? <span className="spinner"></span> : 'GET REFUND'}
                                 </button>
                             </div>
-                        </div>
+                        )}
 
-                        {/* Finalize */}
-                        <div className="action-card">
-                            <h4>🏁 Финализация</h4>
-                            <button
-                                className="btn btn-secondary btn-small"
-                                onClick={handleFinalize}
-                                disabled={actionLoading || !signer || !isDeadlinePassed() || summary.finalized}
-                            >
-                                {actionLoading === 'finalize' ? <span className="spinner"></span> : 'Finalize'}
-                            </button>
-                            {!isDeadlinePassed() && <p style={{ fontSize: '0.75rem', marginTop: '8px', color: '#6B6B6B' }}>Доступно после дедлайна</p>}
-                        </div>
-
-                        {/* Refund */}
-                        <div className="action-card">
-                            <h4>↩️ Возврат средств</h4>
-                            <button
-                                className="btn btn-danger btn-small"
-                                onClick={handleRefund}
-                                disabled={actionLoading || !signer || !summary.finalized || summary.successful}
-                            >
-                                {actionLoading === 'refund' ? <span className="spinner"></span> : 'Refund'}
-                            </button>
-                            {(!summary.finalized || summary.successful) && (
-                                <p style={{ fontSize: '0.75rem', marginTop: '8px', color: '#6B6B6B' }}>
-                                    Доступно если кампания не успешна
+                        {summary.successful && (
+                            <div className="success-section">
+                                <p style={{ color: 'var(--success)', marginBottom: '8px', fontSize: '0.875rem' }}>
+                                    Campaign successful! Total raised: {formatEther(summary.totalRaised)} ETH
                                 </p>
-                            )}
-                        </div>
-
-                        {/* Withdraw */}
-                        <div className="action-card">
-                            <h4>💸 Вывод (создатель)</h4>
-                            <button
-                                className="btn btn-success btn-small"
-                                onClick={handleWithdraw}
-                                disabled={actionLoading || !signer || !summary.finalized || !summary.successful}
-                            >
-                                {actionLoading === 'withdraw' ? <span className="spinner"></span> : 'Withdraw'}
-                            </button>
-                            {(!summary.finalized || !summary.successful) && (
-                                <p style={{ fontSize: '0.75rem', marginTop: '8px', color: '#6B6B6B' }}>
-                                    Доступно только создателю успешной кампании
-                                </p>
-                            )}
-                        </div>
+                                {/* Only creator can withdraw */}
+                                <button
+                                    className="btn btn-success"
+                                    onClick={handleWithdraw}
+                                    disabled={actionLoading}
+                                >
+                                    {actionLoading === 'withdraw' ? <span className="spinner"></span> : 'WITHDRAW FUNDS (Creator Only)'}
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </>
             )}

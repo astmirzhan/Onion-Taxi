@@ -22,7 +22,7 @@ export default function App() {
             <header className="app-header">
                 <img src="/images/onion-taxi-logo.png" alt="Onion Taxi" className="header-logo" />
                 <h1>🚕 Onion Taxi Crowdfunding</h1>
-                <p>Децентрализованная платформа для краудфандинга</p>
+                <p>Decentralized Crowdfunding Platform</p>
             </header>
 
             <WalletBar
@@ -39,13 +39,13 @@ export default function App() {
                     className={`tab ${activeTab === 'campaigns' ? 'active' : ''}`}
                     onClick={() => setActiveTab('campaigns')}
                 >
-                    📋 Кампании
+                    📋 Campaigns
                 </button>
                 <button
                     className={`tab ${activeTab === 'dao' ? 'active' : ''}`}
                     onClick={() => setActiveTab('dao')}
                 >
-                    🪙 Токены
+                    🪙 Tokens
                 </button>
             </div>
 

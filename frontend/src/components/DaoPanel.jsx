@@ -60,7 +60,7 @@ export default function DaoPanel({ provider, signer, account }) {
             await loadProposals();
         } catch (err) {
             console.error('Load data error:', err);
-            setError('Ошибка загрузки: ' + err.message);
+            setError('Load error: ' + err.message);
         } finally {
             setLoading(false);
         }
@@ -74,13 +74,20 @@ export default function DaoPanel({ provider, signer, account }) {
             const proposalsList = [];
             for (let i = 0; i < count; i++) {
                 const p = await dao.proposals(i);
+                let userHasVoted = false;
+
+                if (account) {
+                    userHasVoted = await dao.hasVoted(i, account);
+                }
+
                 proposalsList.push({
                     id: i,
                     description: p.description,
                     deadline: Number(p.deadline),
                     yesVotes: formatUnits(p.yesVotes, 18),
                     noVotes: formatUnits(p.noVotes, 18),
-                    executed: p.executed
+                    executed: p.executed,
+                    hasVoted: userHasVoted
                 });
             }
             setProposals(proposalsList);
@@ -100,7 +107,7 @@ export default function DaoPanel({ provider, signer, account }) {
             if (customMatch) return customMatch[1];
             return err.message.slice(0, 150);
         }
-        return 'Неизвестная ошибка';
+        return 'Unknown error';
     };
 
     const handleApprove = async () => {
@@ -113,13 +120,13 @@ export default function DaoPanel({ provider, signer, account }) {
             const ontToken = new Contract(ONT_ADDRESS, ONTTokenABI.abi, signer);
             const amount = parseUnits(approveAmount, 18);
             const tx = await ontToken.approve(DAO_ADDRESS, amount);
-            setSuccess('Транзакция отправлена...');
+            setSuccess('Transaction sent...');
             await tx.wait();
-            setSuccess('✅ Approve выполнен!');
+            setSuccess('✅ Approved for DAO!');
             setApproveAmount('');
         } catch (err) {
             console.error('Approve error:', err);
-            setError(`Ошибка: ${extractErrorReason(err)}`);
+            setError(`Error: ${extractErrorReason(err)}`);
         } finally {
             setActionLoading('');
         }
@@ -135,14 +142,14 @@ export default function DaoPanel({ provider, signer, account }) {
             const dao = new Contract(DAO_ADDRESS, OnionDAOABI.abi, signer);
             const amount = parseUnits(stakeAmount, 18);
             const tx = await dao.stake(amount);
-            setSuccess('Транзакция отправлена...');
+            setSuccess('Transaction sent...');
             await tx.wait();
-            setSuccess('✅ Стейкинг выполнен!');
+            setSuccess('✅ Staking successful!');
             setStakeAmount('');
             loadData();
         } catch (err) {
             console.error('Stake error:', err);
-            setError(`Ошибка: ${extractErrorReason(err)}`);
+            setError(`Error: ${extractErrorReason(err)}`);
         } finally {
             setActionLoading('');
         }
@@ -158,14 +165,14 @@ export default function DaoPanel({ provider, signer, account }) {
             const dao = new Contract(DAO_ADDRESS, OnionDAOABI.abi, signer);
             const amount = parseUnits(unstakeAmount, 18);
             const tx = await dao.unstake(amount);
-            setSuccess('Транзакция отправлена...');
+            setSuccess('Transaction sent...');
             await tx.wait();
-            setSuccess('✅ Unstake выполнен!');
+            setSuccess('✅ Unstaked successfully!');
             setUnstakeAmount('');
             loadData();
         } catch (err) {
             console.error('Unstake error:', err);
-            setError(`Ошибка: ${extractErrorReason(err)}`);
+            setError(`Error: ${extractErrorReason(err)}`);
         } finally {
             setActionLoading('');
         }
@@ -181,15 +188,15 @@ export default function DaoPanel({ provider, signer, account }) {
             const dao = new Contract(DAO_ADDRESS, OnionDAOABI.abi, signer);
             const durationSeconds = Number(proposalDuration) * 60;
             const tx = await dao.createProposal(proposalDescription, durationSeconds);
-            setSuccess('Транзакция отправлена...');
+            setSuccess('Transaction sent...');
             await tx.wait();
-            setSuccess('✅ Предложение создано!');
+            setSuccess('✅ Proposal created!');
             setProposalDescription('');
             setProposalDuration('');
             loadProposals();
         } catch (err) {
             console.error('Create proposal error:', err);
-            setError(`Ошибка: ${extractErrorReason(err)}`);
+            setError(`Error: ${extractErrorReason(err)}`);
         } finally {
             setActionLoading('');
         }
@@ -204,13 +211,13 @@ export default function DaoPanel({ provider, signer, account }) {
         try {
             const dao = new Contract(DAO_ADDRESS, OnionDAOABI.abi, signer);
             const tx = await dao.vote(proposalId, support);
-            setSuccess('Транзакция отправлена...');
+            setSuccess('Transaction sent...');
             await tx.wait();
-            setSuccess(`✅ Голос ${support ? 'ЗА' : 'ПРОТИВ'} записан!`);
+            setSuccess(`✅ Voted ${support ? 'FOR' : 'AGAINST'}!`);
             loadProposals();
         } catch (err) {
             console.error('Vote error:', err);
-            setError(`Ошибка: ${extractErrorReason(err)}`);
+            setError(`Error: ${extractErrorReason(err)}`);
         } finally {
             setActionLoading('');
         }
@@ -225,13 +232,13 @@ export default function DaoPanel({ provider, signer, account }) {
         try {
             const dao = new Contract(DAO_ADDRESS, OnionDAOABI.abi, signer);
             const tx = await dao.execute(proposalId);
-            setSuccess('Транзакция отправлена...');
+            setSuccess('Transaction sent...');
             await tx.wait();
-            setSuccess('✅ Предложение исполнено!');
+            setSuccess('✅ Proposal executed!');
             loadProposals();
         } catch (err) {
             console.error('Execute error:', err);
-            setError(`Ошибка: ${extractErrorReason(err)}`);
+            setError(`Error: ${extractErrorReason(err)}`);
         } finally {
             setActionLoading('');
         }
@@ -242,7 +249,7 @@ export default function DaoPanel({ provider, signer, account }) {
     };
 
     const formatDate = (timestamp) => {
-        return new Date(timestamp * 1000).toLocaleString('ru-RU');
+        return new Date(timestamp * 1000).toLocaleString('en-US');
     };
 
     const canVote = parseFloat(stakedAmount) >= parseFloat(minStakeToVote);
@@ -250,9 +257,9 @@ export default function DaoPanel({ provider, signer, account }) {
     if (!account) {
         return (
             <div className="card">
-                <h3 className="card-title">🪙 Токены</h3>
+                <h3 className="card-title">🪙 Tokens</h3>
                 <div className="empty-state">
-                    <p>Подключите кошелёк чтобы использовать DAO</p>
+                    <p>Connect wallet to access DAO</p>
                 </div>
             </div>
         );
@@ -260,24 +267,24 @@ export default function DaoPanel({ provider, signer, account }) {
 
     return (
         <div className="card">
-            <h3 className="card-title">🪙 Токены ONT</h3>
+            <h3 className="card-title">🪙 ONT Tokens (DAO)</h3>
 
             {loading ? (
                 <div className="loading">
                     <span className="spinner"></span>
-                    Загрузка...
+                    Loading...
                 </div>
             ) : (
                 <>
                     <div className="dao-sections">
                         <div className="dao-section">
-                            <h4>💰 Баланс ONT</h4>
+                            <h4>💰 ONT Balance</h4>
                             <div className="stat-row">
-                                <span className="stat-label">Баланс:</span>
+                                <span className="stat-label">Balance:</span>
                                 <span className="stat-value">{parseFloat(ontBalance).toFixed(2)} ONT</span>
                             </div>
                             <div className="stat-row">
-                                <span className="stat-label">Застейкано:</span>
+                                <span className="stat-label">Staked:</span>
                                 <span className="stat-value">{parseFloat(stakedAmount).toFixed(2)} ONT</span>
                             </div>
                             <div className="stat-row">
@@ -286,22 +293,30 @@ export default function DaoPanel({ provider, signer, account }) {
                             </div>
                             <div className="stat-row">
                                 <span className="stat-label">Eligible ({minBalanceToVote}+ ONT):</span>
-                                <span className="stat-value">{isEligible ? '✅ Да' : '❌ Нет'}</span>
+                                <span className="stat-value">{isEligible ? '✅ Yes' : '❌ No'}</span>
                             </div>
                             <div className="stat-row">
                                 <span className="stat-label">Can Vote ({minStakeToVote}+ staked):</span>
-                                <span className="stat-value">{canVote ? '✅ Да' : '❌ Нет'}</span>
+                                <span className="stat-value">{canVote ? '✅ Yes' : '❌ No'}</span>
                             </div>
                         </div>
 
                         <div className="dao-section">
-                            <h4>✅ Approve для DAO</h4>
+                            <h4>
+                                ✅ Approve for DAO
+                                <span
+                                    className="info-tooltip"
+                                    data-tooltip="Decentralized Autonomous Organization (DAO). This action allows the DAO contract to access your ONT tokens for staking. Must be done once before you can stake."
+                                >
+                                    ?
+                                </span>
+                            </h4>
                             <div className="inline-form">
                                 <div className="form-group">
                                     <input
                                         type="number"
                                         className="form-control"
-                                        placeholder="ONT"
+                                        placeholder="Amount"
                                         value={approveAmount}
                                         onChange={(e) => setApproveAmount(e.target.value)}
                                         disabled={actionLoading}
@@ -318,13 +333,21 @@ export default function DaoPanel({ provider, signer, account }) {
                         </div>
 
                         <div className="dao-section">
-                            <h4>📥 Стейкинг</h4>
+                            <h4>
+                                📥 Stake Tokens
+                                <span
+                                    className="info-tooltip"
+                                    data-tooltip="Locks your ONT tokens in the DAO contract. Staking gives you Voting Power to participate in governance proposals."
+                                >
+                                    ?
+                                </span>
+                            </h4>
                             <div className="inline-form">
                                 <div className="form-group">
                                     <input
                                         type="number"
                                         className="form-control"
-                                        placeholder="ONT"
+                                        placeholder="Amount"
                                         value={stakeAmount}
                                         onChange={(e) => setStakeAmount(e.target.value)}
                                         disabled={actionLoading}
@@ -341,13 +364,21 @@ export default function DaoPanel({ provider, signer, account }) {
                         </div>
 
                         <div className="dao-section">
-                            <h4>📤 Анстейк</h4>
+                            <h4>
+                                📤 Unstake Tokens
+                                <span
+                                    className="info-tooltip"
+                                    data-tooltip="Unlocks your tokens and returns them to your wallet. Warning: You will lose your Voting Power immediately."
+                                >
+                                    ?
+                                </span>
+                            </h4>
                             <div className="inline-form">
                                 <div className="form-group">
                                     <input
                                         type="number"
                                         className="form-control"
-                                        placeholder="ONT"
+                                        placeholder="Amount"
                                         value={unstakeAmount}
                                         onChange={(e) => setUnstakeAmount(e.target.value)}
                                         disabled={actionLoading}
@@ -365,13 +396,13 @@ export default function DaoPanel({ provider, signer, account }) {
                     </div>
 
                     <div style={{ marginTop: '24px' }}>
-                        <h4 style={{ marginBottom: '16px', color: 'var(--accent-secondary)' }}>📝 Создать предложение</h4>
+                        <h4 style={{ marginBottom: '16px', color: 'var(--accent-secondary)' }}>📝 Create Proposal</h4>
                         <div className="form-group">
-                            <label>Описание</label>
+                            <label>Description</label>
                             <input
                                 type="text"
                                 className="form-control"
-                                placeholder="Описание предложения..."
+                                placeholder="Proposal description..."
                                 value={proposalDescription}
                                 onChange={(e) => setProposalDescription(e.target.value)}
                                 disabled={actionLoading}
@@ -379,7 +410,7 @@ export default function DaoPanel({ provider, signer, account }) {
                         </div>
                         <div className="inline-form">
                             <div className="form-group">
-                                <label>Длительность (мин)</label>
+                                <label>Duration (min)</label>
                                 <input
                                     type="number"
                                     className="form-control"
@@ -395,17 +426,17 @@ export default function DaoPanel({ provider, signer, account }) {
                                 disabled={actionLoading || !proposalDescription || !proposalDuration}
                                 style={{ marginTop: '24px' }}
                             >
-                                {actionLoading === 'createProposal' ? <span className="spinner"></span> : 'Создать'}
+                                {actionLoading === 'createProposal' ? <span className="spinner"></span> : 'Create'}
                             </button>
                         </div>
                     </div>
 
                     <div className="proposals-list">
-                        <h4 style={{ marginBottom: '16px', color: 'var(--accent-secondary)' }}>📋 Предложения ({proposals.length})</h4>
+                        <h4 style={{ marginBottom: '16px', color: 'var(--accent-secondary)' }}>📋 Proposals ({proposals.length})</h4>
 
                         {proposals.length === 0 ? (
                             <div className="empty-state">
-                                <p>Предложений пока нет</p>
+                                <p>No proposals yet</p>
                             </div>
                         ) : (
                             proposals.map((p) => (
@@ -413,43 +444,49 @@ export default function DaoPanel({ provider, signer, account }) {
                                     <div className="proposal-header">
                                         <span className="proposal-id">#{p.id}</span>
                                         <span className={`proposal-status ${p.executed ? 'executed' : isProposalActive(p.deadline) ? 'active' : 'ended'}`}>
-                                            {p.executed ? 'Исполнено' : isProposalActive(p.deadline) ? 'Активно' : 'Завершено'}
+                                            {p.executed ? 'Executed' : isProposalActive(p.deadline) ? 'Active' : 'Ended'}
                                         </span>
                                     </div>
                                     <div className="proposal-description">{p.description}</div>
                                     <div style={{ fontSize: '0.75rem', color: '#6B6B6B', marginBottom: '8px' }}>
-                                        Дедлайн: {formatDate(p.deadline)}
+                                        Deadline: {formatDate(p.deadline)}
                                     </div>
                                     <div className="proposal-votes">
-                                        <span className="vote-count for">👍 ЗА: {parseFloat(p.yesVotes).toFixed(0)}</span>
-                                        <span className="vote-count against">👎 ПРОТИВ: {parseFloat(p.noVotes).toFixed(0)}</span>
+                                        <span className="vote-count for">👍 FOR: {parseFloat(p.yesVotes).toFixed(0)}</span>
+                                        <span className="vote-count against">👎 AGAINST: {parseFloat(p.noVotes).toFixed(0)}</span>
                                     </div>
                                     <div className="proposal-actions">
                                         {isProposalActive(p.deadline) && (
-                                            <>
-                                                <button
-                                                    className="btn btn-success btn-small"
-                                                    onClick={() => handleVote(p.id, true)}
-                                                    disabled={actionLoading || !canVote}
-                                                >
-                                                    {actionLoading === `vote-${p.id}` ? <span className="spinner"></span> : '👍 ЗА'}
-                                                </button>
-                                                <button
-                                                    className="btn btn-danger btn-small"
-                                                    onClick={() => handleVote(p.id, false)}
-                                                    disabled={actionLoading || !canVote}
-                                                >
-                                                    {actionLoading === `vote-${p.id}` ? <span className="spinner"></span> : '👎 ПРОТИВ'}
-                                                </button>
-                                            </>
+                                            p.hasVoted ? (
+                                                <span style={{ color: '#CAFF00', fontSize: '0.875rem', fontWeight: '500' }}>
+                                                    ✅ You have already voted
+                                                </span>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        className="btn btn-success btn-small"
+                                                        onClick={() => handleVote(p.id, true)}
+                                                        disabled={actionLoading || !canVote}
+                                                    >
+                                                        {actionLoading === `vote-${p.id}` ? <span className="spinner"></span> : '👍 VOTE FOR'}
+                                                    </button>
+                                                    <button
+                                                        className="btn btn-danger btn-small"
+                                                        onClick={() => handleVote(p.id, false)}
+                                                        disabled={actionLoading || !canVote}
+                                                    >
+                                                        {actionLoading === `vote-${p.id}` ? <span className="spinner"></span> : '👎 VOTE AGAINST'}
+                                                    </button>
+                                                </>
+                                            )
                                         )}
-                                        {!isProposalActive(p.deadline) && !p.executed && (
+                                        {!isProposalActive(p.deadline) && !p.executed && parseFloat(p.yesVotes) > parseFloat(p.noVotes) && (
                                             <button
                                                 className="btn btn-primary btn-small"
                                                 onClick={() => handleExecute(p.id)}
                                                 disabled={actionLoading}
                                             >
-                                                {actionLoading === `execute-${p.id}` ? <span className="spinner"></span> : '⚡ Execute'}
+                                                {actionLoading === `execute-${p.id}` ? <span className="spinner"></span> : '⚡ Execute Proposal'}
                                             </button>
                                         )}
                                     </div>
@@ -464,7 +501,7 @@ export default function DaoPanel({ provider, signer, account }) {
                         style={{ marginTop: '16px' }}
                         disabled={loading}
                     >
-                        🔄 Обновить данные
+                        🔄 Refresh Data
                     </button>
                 </>
             )}
