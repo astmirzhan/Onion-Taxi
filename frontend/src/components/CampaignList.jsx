@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Contract } from 'ethers';
 import { FACTORY_ADDRESS } from '../config.js';
 import CampaignFactoryABI from '../../../artifacts/contracts/CampaignFactory.sol/CampaignFactory.json';
@@ -7,6 +7,12 @@ export default function CampaignList({ provider, signer, selectedCampaign, onSel
     const [campaigns, setCampaigns] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (provider) {
+            loadCampaigns();
+        }
+    }, [provider]);
 
     const loadCampaigns = async () => {
         if (!provider) {

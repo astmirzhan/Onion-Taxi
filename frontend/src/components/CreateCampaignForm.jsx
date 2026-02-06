@@ -6,7 +6,7 @@ import CampaignFactoryABI from '../../../artifacts/contracts/CampaignFactory.sol
 export default function CreateCampaignForm({ signer, onCampaignCreated }) {
     const [title, setTitle] = useState('');
     const [goalEth, setGoalEth] = useState('');
-    const [durationMinutes, setDurationMinutes] = useState('');
+    const [durationDays, setDurationDays] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -19,10 +19,13 @@ export default function CreateCampaignForm({ signer, onCampaignCreated }) {
             return;
         }
 
-        if (!title || !goalEth || !durationMinutes) {
+        if (!title || !goalEth || !durationDays) {
             setError('Заполните все поля!');
             return;
         }
+
+        // Convert days to seconds
+        const durationSeconds = parseInt(durationDays) * 24 * 60 * 60;
 
         setLoading(true);
         setError('');
@@ -33,8 +36,8 @@ export default function CreateCampaignForm({ signer, onCampaignCreated }) {
 
             const tx = await factory.createCampaign(
                 title,
-                goalEth, // contract expects ETH amount as integer (converted to wei internally)
-                durationMinutes
+                parseEther(goalEth), // Convert ETH to Wei
+                durationSeconds
             );
 
             setSuccess('Транзакция отправлена, ожидаем подтверждения...');
@@ -61,7 +64,7 @@ export default function CreateCampaignForm({ signer, onCampaignCreated }) {
             // Clear form
             setTitle('');
             setGoalEth('');
-            setDurationMinutes('');
+            setDurationDays('');
 
             if (onCampaignCreated) {
                 onCampaignCreated();
@@ -86,6 +89,21 @@ export default function CreateCampaignForm({ signer, onCampaignCreated }) {
             return err.message.slice(0, 100);
         }
         return 'Неизвестная ошибка';
+    };
+
+    // Helper to display duration nicely
+    const formatDurationHint = (days) => {
+        if (!days || days <= 0) return '';
+        const d = parseInt(days);
+        if (d < 30) return `${d} дн.`;
+        if (d < 365) {
+            const months = Math.floor(d / 30);
+            const remainDays = d % 30;
+            return remainDays > 0 ? `≈ ${months} мес. ${remainDays} дн.` : `≈ ${months} мес.`;
+        }
+        const years = Math.floor(d / 365);
+        const remainMonths = Math.floor((d % 365) / 30);
+        return remainMonths > 0 ? `≈ ${years} г. ${remainMonths} мес.` : `≈ ${years} г.`;
     };
 
     return (
@@ -121,16 +139,19 @@ export default function CreateCampaignForm({ signer, onCampaignCreated }) {
                     </div>
 
                     <div className="form-group">
-                        <label>Длительность (минуты)</label>
+                        <label>Длительность (дни)</label>
                         <input
                             type="number"
                             className="form-control"
-                            placeholder="60"
+                            placeholder="30"
                             min="1"
-                            value={durationMinutes}
-                            onChange={(e) => setDurationMinutes(e.target.value)}
+                            value={durationDays}
+                            onChange={(e) => setDurationDays(e.target.value)}
                             disabled={loading}
                         />
+                        {durationDays && (
+                            <span className="duration-hint">{formatDurationHint(durationDays)}</span>
+                        )}
                     </div>
                 </div>
 

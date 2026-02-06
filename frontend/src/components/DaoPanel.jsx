@@ -250,7 +250,7 @@ export default function DaoPanel({ provider, signer, account }) {
     if (!account) {
         return (
             <div className="card">
-                <h3 className="card-title">🗳️ DAO & Токены</h3>
+                <h3 className="card-title">🪙 Токены</h3>
                 <div className="empty-state">
                     <p>Подключите кошелёк чтобы использовать DAO</p>
                 </div>
@@ -260,7 +260,7 @@ export default function DaoPanel({ provider, signer, account }) {
 
     return (
         <div className="card">
-            <h3 className="card-title">🗳️ DAO & Токены ONT</h3>
+            <h3 className="card-title">🪙 Токены ONT</h3>
 
             {loading ? (
                 <div className="loading">

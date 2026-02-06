@@ -68,6 +68,12 @@ contract Campaign is ReentrancyGuard {
         ontToken.mint(msg.sender, mintAmount);
 
         emit Contributed(msg.sender, msg.value, mintAmount);
+
+        if (totalRaised >= goalWei) {
+            finalized = true;
+            successful = true;
+            emit Finalized(true, totalRaised);
+        }
     }
 
 

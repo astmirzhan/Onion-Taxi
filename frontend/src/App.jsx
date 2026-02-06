@@ -19,13 +19,12 @@ export default function App() {
 
     return (
         <div className="app">
-            {/* Header */}
             <header className="app-header">
+                <img src="/images/onion-taxi-logo.png" alt="Onion Taxi" className="header-logo" />
                 <h1>🚕 Onion Taxi Crowdfunding</h1>
                 <p>Децентрализованная платформа для краудфандинга</p>
             </header>
 
-            {/* Wallet Connection */}
             <WalletBar
                 account={account}
                 setAccount={setAccount}
@@ -35,7 +34,6 @@ export default function App() {
                 setSigner={setSigner}
             />
 
-            {/* Navigation Tabs */}
             <div className="tabs">
                 <button
                     className={`tab ${activeTab === 'campaigns' ? 'active' : ''}`}
@@ -47,11 +45,10 @@ export default function App() {
                     className={`tab ${activeTab === 'dao' ? 'active' : ''}`}
                     onClick={() => setActiveTab('dao')}
                 >
-                    🗳️ DAO & Токены
+                    🪙 Токены
                 </button>
             </div>
 
-            {/* Campaigns Tab */}
             {activeTab === 'campaigns' && (
                 <div className="main-grid">
                     <div className="sidebar">
@@ -77,7 +74,6 @@ export default function App() {
                 </div>
             )}
 
-            {/* DAO Tab */}
             {activeTab === 'dao' && (
                 <DaoPanel
                     provider={provider}
