@@ -5,20 +5,16 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /// @title Simple DAO Gate + Staking for Voting (educational)
-/// @notice Requirements:
-/// 1) Must hold a minimum ONT balance to be eligible
-/// 2) Must stake (lock) ONT to activate voting power
 contract OnionDAO is ReentrancyGuard {
     IERC20 public immutable ont;
 
-    // Gate rules
+    // --- RULES ---
     uint256 public immutable MIN_BALANCE_TO_VOTE; // must hold at least this much
     uint256 public immutable MIN_STAKE_TO_VOTE;   // must stake at least this much to vote
 
-    // Staking
+    // --- STATE ---
     mapping(address => uint256) public staked;
 
-    // Proposal model (simple)
     struct Proposal {
         string description;
         uint256 deadline;
@@ -29,12 +25,10 @@ contract OnionDAO is ReentrancyGuard {
 
     Proposal[] public proposals;
 
-    // Prevent double voting per proposal
     mapping(uint256 => mapping(address => bool)) public hasVoted;
 
     event Staked(address indexed user, uint256 amount);
     event Unstaked(address indexed user, uint256 amount);
-
     event ProposalCreated(uint256 indexed proposalId, string description, uint256 deadline);
     event Voted(uint256 indexed proposalId, address indexed voter, bool support, uint256 weight);
     event Executed(uint256 indexed proposalId, bool passed);
@@ -57,26 +51,20 @@ contract OnionDAO is ReentrancyGuard {
         MIN_STAKE_TO_VOTE = minStakeToVote;
     }
 
-    // --------------------
-    // Eligibility
-    // --------------------
+    // --- ELIGIBILITY CHECKS ---
     function isEligible(address user) public view returns (bool) {
         return ont.balanceOf(user) >= MIN_BALANCE_TO_VOTE;
     }
 
     function votingPower(address user) public view returns (uint256) {
-        // voting weight = staked amount (simple and clear for demo)
         return staked[user];
     }
 
-    // --------------------
-    // Staking
-    // --------------------
+    // --- STAKING LOGIC ---
     function stake(uint256 amount) external nonReentrant {
         if (amount == 0) revert AmountZero();
         if (!isEligible(msg.sender)) revert NotEligible();
 
-        // transfer ONT from user to DAO
         // user must approve first: ont.approve(dao, amount)
         bool ok = ont.transferFrom(msg.sender, address(this), amount);
         require(ok, "transferFrom failed");
@@ -98,8 +86,8 @@ contract OnionDAO is ReentrancyGuard {
         emit Unstaked(msg.sender, amount);
     }
 
+    // --- GOVERNANCE LOGIC ---
     function createProposal(string calldata description, uint256 durationSeconds) external returns (uint256) {
-
         require(durationSeconds > 0, "duration=0");
 
         uint256 deadline = block.timestamp + durationSeconds;
@@ -127,7 +115,7 @@ contract OnionDAO is ReentrancyGuard {
         if (!isEligible(msg.sender)) revert NotEligible();
         if (staked[msg.sender] < MIN_STAKE_TO_VOTE) revert StakeTooLow();
 
-        uint256 weight = votingPower(msg.sender); // = staked
+        uint256 weight = votingPower(msg.sender); 
         hasVoted[proposalId][msg.sender] = true;
 
         if (support) p.yesVotes += weight;
@@ -146,9 +134,7 @@ contract OnionDAO is ReentrancyGuard {
 
         bool passed = p.yesVotes > p.noVotes;
         emit Executed(proposalId, passed);
-
     }
-
 
     function proposalsCount() external view returns (uint256) {
         return proposals.length;

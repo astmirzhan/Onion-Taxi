@@ -71,37 +71,36 @@ contract Campaign is ReentrancyGuard {
         }
     }
 
-    // New Donate Logic: PARTIAL Minting
+    // --- CONTRIBUTION LOGIC ---
     function contribute() external payable nonReentrant {
         if (finalized) revert AlreadyFinalized();
         if (block.timestamp >= deadline) revert DeadlinePassed();
         if (msg.value == 0) revert ZeroValue();
 
-        // 1. Accept ETH
+        // --- STATE UPDATES ---
         contributions[msg.sender] += msg.value;
         totalRaised += msg.value;
 
         emit Contributed(msg.sender, msg.value);
 
-        // 2. Calculate Reward
+        // --- REWARD CALCULATION ---
         uint256 expectedReward = msg.value * rate;
         uint256 remaining = ontToken.remainingMintableSupply();
         uint256 mintedAmount = 0;
 
-        // 3. Partial Mint Logic
+        // --- PARTIAL MINT LOGIC ---
         if (remaining > 0) {
             if (remaining >= expectedReward) {
                 mintedAmount = expectedReward;
             } else {
-                mintedAmount = remaining; // Mint whatever is left
+                mintedAmount = remaining; 
             }
-            // Mint tokens
             ontToken.mint(msg.sender, mintedAmount);
         }
 
         emit RewardMinted(msg.sender, msg.value, expectedReward, mintedAmount, remaining > mintedAmount ? remaining - mintedAmount : 0);
 
-        // 4. Check Goal
+        // --- FINALIZATION CHECK ---
         if (totalRaised >= goalWei) {
             finalized = true;
             successful = true;
@@ -125,6 +124,7 @@ contract Campaign is ReentrancyGuard {
         emit Cancelled(msg.sender, amount);
     }
 
+    // --- WITHDRAW LOGIC ---
     function withdrawCreator() external nonReentrant {
         _autoFinalize();
         
@@ -136,12 +136,12 @@ contract Campaign is ReentrancyGuard {
         uint256 fee = (totalBalance * PLATFORM_FEE_PERCENT) / 100;
         uint256 creatorShare = totalBalance - fee;
 
-        // 1. Pay Platform Fee to deployer/treasury
+        // --- PAY FEE ---
         (bool feeOk, ) = payable(feeRecipient).call{value: fee}("");
         require(feeOk, "Fee transfer failed");
         emit FeePaid(feeRecipient, fee);
 
-        // 2. Pay Creator
+        // --- PAY CREATOR ---
         (bool ok, ) = payable(creator).call{value: creatorShare}("");
         require(ok, "ETH transfer failed");
 
