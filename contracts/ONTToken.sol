@@ -8,7 +8,7 @@ contract ONTToken is ERC20, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     
     // --- CONSTANTS ---
-    uint256 public constant MAX_SUPPLY = 50_000_000 * 10**18;
+    uint256 public constant MAX_SUPPLY = 30_000_000 * 10**18;
     
     error CapExceeded();
 

@@ -34,8 +34,8 @@ describe("Onion Taxi Crowdfunding System", function () {
 
     describe("Deployment & Setup", function () {
         it("Should mint 20% of Cap to Treasury (Owner)", async function () {
-            const maxSupply = ethers.parseUnits("50000000", 18);
-            const expectedTreasury = (maxSupply * 20n) / 100n; // 10M
+            const maxSupply = ethers.parseUnits("30000000", 18);
+            const expectedTreasury = (maxSupply * 20n) / 100n; // 6M
             expect(await ontToken.balanceOf(owner.address)).to.equal(expectedTreasury);
         });
 
