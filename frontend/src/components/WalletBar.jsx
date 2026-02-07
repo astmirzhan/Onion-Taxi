@@ -112,9 +112,6 @@ export default function WalletBar({ onConnect, account, setAccount, provider, se
                 {account ? (
                     <div className="wallet-info">
                         <span className="wallet-address">{truncateAddress(account)}</span>
-                        <span className={`network-badge ${isCorrectNetwork ? 'correct' : 'wrong'}`}>
-                            {networkName}
-                        </span>
                     </div>
                 ) : (
                     <div>
