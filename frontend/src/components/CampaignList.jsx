@@ -5,6 +5,7 @@ import CampaignFactoryABI from '../../../artifacts/contracts/CampaignFactory.sol
 
 export default function CampaignList({ provider, signer, selectedCampaign, onSelectCampaign }) {
     const [campaigns, setCampaigns] = useState([]);
+    const [campaignNames, setCampaignNames] = useState({});
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -27,6 +28,29 @@ export default function CampaignList({ provider, signer, selectedCampaign, onSel
             const factory = new Contract(FACTORY_ADDRESS, CampaignFactoryABI.abi, provider);
             const campaignAddresses = await factory.getCampaigns();
             setCampaigns(campaignAddresses);
+
+            // Load campaign names
+            const names = {};
+            for (const address of campaignAddresses) {
+                try {
+                    const campaignABI = [
+                        {
+                            "inputs": [],
+                            "name": "title",
+                            "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+                            "stateMutability": "view",
+                            "type": "function"
+                        }
+                    ];
+                    const campaign = new Contract(address, campaignABI, provider);
+                    const title = await campaign.title();
+                    names[address] = title;
+                } catch (err) {
+                    console.error(`Error loading title for campaign ${address}:`, err);
+                    names[address] = `Campaign ${Object.keys(names).length + 1}`;
+                }
+            }
+            setCampaignNames(names);
 
             if (campaignAddresses.length === 0) {
                 setError('No campaigns found. Create the first one!');
@@ -73,7 +97,7 @@ export default function CampaignList({ provider, signer, selectedCampaign, onSel
                             className={`campaign-item ${selectedCampaign === address ? 'selected' : ''}`}
                             onClick={() => onSelectCampaign(address)}
                         >
-                            <strong>Campaign #{index + 1}</strong>
+                            <strong>{campaignNames[address] || `Campaign #${index + 1}`}</strong>
                             <div className="campaign-item-address">{truncateAddress(address)}</div>
                         </li>
                     ))}
